@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Send } from "lucide-react"
+import { Send, Activity, Target, Shield, ArrowRight } from "lucide-react"
 import type { ChatMessage } from "@/lib/types"
 
 interface ChatPanelProps {
@@ -87,32 +87,49 @@ export function ChatPanel({ chatHistory, onSubmitPrompt, onExecuteSwap }: ChatPa
               <Card className="max-w-[90%] border border-border bg-card p-4">
                 {/* Parsed Intent */}
                 {message.parsedIntent && (
-                  <div className="mb-4">
-                    <p className="mb-2 text-sm text-muted-foreground">Parsed Intent:</p>
-                    <pre className="overflow-x-auto rounded bg-muted p-3 font-mono text-sm">
-                      <code>
-                        {`{`}
-                        {"\n"}
-                        {"  "}
-                        <span className="text-primary">"action"</span>: "{message.parsedIntent.action}",
-                        {"\n"}
-                        {"  "}
-                        <span className="text-primary">"threshold"</span>: "{message.parsedIntent.threshold}",
-                        {"\n"}
-                        {"  "}
-                        <span className="text-primary">"baseAsset"</span>: "{message.parsedIntent.baseAsset}",
-                        {"\n"}
-                        {"  "}
-                        <span className="text-primary">"compareAsset"</span>: "{message.parsedIntent.compareAsset}",
-                        {"\n"}
-                        {"  "}
-                        <span className="text-primary">"targetChain"</span>: "{message.parsedIntent.targetChain}",
-                        {"\n"}
-                        {"  "}
-                        <span className="text-primary">"privacy"</span>: "{message.parsedIntent.privacy}"{"\n"}
-                        {`}`}
-                      </code>
-                    </pre>
+                  <div className="mb-4 rounded-lg bg-muted/50 p-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
+                        <Activity className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <span className="text-sm font-medium text-foreground">
+                        Action: {message.parsedIntent.action.replace("_", " ")}
+                      </span>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="flex items-center gap-2 rounded-md border border-border bg-background p-2">
+                        <Target className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase text-muted-foreground">Threshold</span>
+                          <span className="text-sm font-medium">{message.parsedIntent.threshold}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 rounded-md border border-border bg-background p-2">
+                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase text-muted-foreground">Privacy</span>
+                          <span className="text-sm font-medium capitalize">{message.parsedIntent.privacy}</span>
+                        </div>
+                      </div>
+
+                      <div className="col-span-2 flex items-center gap-2 rounded-md border border-border bg-background p-2">
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="bg-muted font-mono">
+                            {message.parsedIntent.baseAsset}
+                          </Badge>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                          <Badge variant="outline" className="bg-muted font-mono">
+                            {message.parsedIntent.compareAsset}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-muted-foreground">on</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {message.parsedIntent.targetChain}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
                 )}
 

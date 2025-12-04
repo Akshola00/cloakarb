@@ -6,6 +6,7 @@ import { Sidebar } from "@/app/components/sidebar"
 import { ChatPanel } from "@/app/components/chat-panel"
 import { Footer } from "@/app/components/footer"
 import type { ChatMessage, PriceScan, TxLog, Settings } from "@/lib/types"
+import { parseWithFakeLLM } from "@/utils/parsePrompt"
 
 export default function Home() {
   // State
@@ -43,11 +44,36 @@ export default function Home() {
     
     // Simulate agent response
     setTimeout(() => {
+        const parsed = parseWithFakeLLM(prompt)
+        const isProfitable = parsed.prices.profit_pct && parseFloat(parsed.prices.profit_pct) > 0
+
         const agentResponse: ChatMessage = {
             id: (Date.now() + 1).toString(),
             type: "agent",
-            content: "I'm analyzing that for you.",
+            content: isProfitable 
+                ? `I found a profitable arbitrage opportunity for ${parsed.intent.to}!` 
+                : `Monitoring for ${parsed.intent.to} arbitrage opportunities...`,
             timestamp: new Date(),
+            parsedIntent: {
+                action: parsed.intent.action,
+                threshold: parsed.intent.threshold + "%",
+                baseAsset: parsed.intent.from.toUpperCase(),
+                compareAsset: parsed.intent.to === "ethereum" ? "ETH" : "SOL",
+                targetChain: parsed.intent.to.charAt(0).toUpperCase() + parsed.intent.to.slice(1),
+                privacy: "shielded"
+            },
+            arbitrageData: [
+                { 
+                    chain: "Zcash", 
+                    price: parsed.prices.zcash_native, 
+                    difference: "0%" 
+                },
+                { 
+                    chain: parsed.intent.to.charAt(0).toUpperCase() + parsed.intent.to.slice(1), 
+                    price: parsed.prices.zcash_bridged, 
+                    difference: (parseFloat(parsed.prices.profit_pct || "0") > 0 ? "+" : "") + (parsed.prices.profit_pct || "0") + "%"
+                }
+            ]
         }
         setChatHistory(prev => [...prev, agentResponse])
     }, 1000)
