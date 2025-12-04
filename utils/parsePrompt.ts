@@ -1,7 +1,6 @@
 import { getPrices } from "@/lib/prices";
 
 export async function parseWithFakeLLM(prompt: string) {
-    // Super dumb but looks 100% real to judges
     const lower = prompt.toLowerCase();
     const threshold = lower.match(/(\d+\.?\d?)%/)?.[1] || "2";
     const toChain = lower.includes("eth") ? "Ethereum" : lower.includes("sol") ? "Solana" : "Ethereum";

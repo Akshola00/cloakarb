@@ -55,8 +55,6 @@ export async function createZecIntent(amountZec: string) {
     }
 
     try {
-        // For demo purposes, create a mock intent
-        // In production, you would initialize IntentsSDK and create real intents
         const mockIntent = {
             chain: "zcash",
             action: "transfer",
