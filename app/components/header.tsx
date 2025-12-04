@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge"
 
 interface HeaderProps {
   walletConnected: boolean
+  nearAccount?: string | null
   onConnectWallet: () => void
 }
 
-export function Header({ walletConnected, onConnectWallet }: HeaderProps) {
+export function Header({ walletConnected, nearAccount, onConnectWallet }: HeaderProps) {
   return (
     <header className="flex h-[60px] items-center justify-between border-b border-border bg-background px-4 lg:px-6">
       <div className="flex items-center gap-2">
@@ -30,7 +31,11 @@ export function Header({ walletConnected, onConnectWallet }: HeaderProps) {
               : "bg-muted text-muted-foreground hover:bg-primary hover:text-black"
           }
         >
-          {walletConnected ? "Connected" : "Connect Wallet"}
+          {walletConnected && nearAccount 
+            ? `${nearAccount.slice(0, 12)}...${nearAccount.slice(-4)}` 
+            : walletConnected 
+            ? "Connected" 
+            : "Connect Wallet"}
         </Button>
       </div>
     </header>

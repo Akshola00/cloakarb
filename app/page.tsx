@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/app/components/header"
 import { Sidebar } from "@/app/components/sidebar"
 import { ChatPanel } from "@/app/components/chat-panel"
 import { Footer } from "@/app/components/footer"
 import type { ChatMessage, PriceScan, TxLog, Settings } from "@/lib/types"
 import { parseWithFakeLLM } from "@/utils/parsePrompt"
+import { getPrices } from "@/lib/prices"
+import { initNear, createZecIntent, connectWallet, isWalletConnected, getAccountId } from "@/lib/near"
 
 export default function Home() {
   // State
@@ -17,23 +19,86 @@ export default function Home() {
     targetChains: ["Zcash"],
   })
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
+  const [priceScans, setPriceScans] = useState<PriceScan[]>([])
+  const [txLogs, setTxLogs] = useState<TxLog[]>([])
+  const [nearAccount, setNearAccount] = useState<string | null>(null)
 
-  // Mock Data
-  const priceScans: PriceScan[] = [
-    { timestamp: "10:45:02", zecPrice: "82.45", ethPrice: "2250.10", solPrice: "81.12", arbPercent: "2.3" },
-    { timestamp: "10:44:30", zecPrice: "82.40", ethPrice: "2248.50", solPrice: "80.90", arbPercent: "0.5" },
-    { timestamp: "10:44:00", zecPrice: "82.35", ethPrice: "2245.20", solPrice: "80.85", arbPercent: "-0.2" },
-  ]
+  // Fetch real-time prices
+  useEffect(() => {
+    const fetchAndUpdatePrices = async () => {
+      try {
+        const prices = await getPrices()
+        const now = new Date()
+        const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+        
+        // Calculate arbitrage percentage (simple example: compare ZEC to ETH)
+        const arbPercent = ((prices.zec - 82) / 82 * 100).toFixed(1)
+        
+        const newScan: PriceScan = {
+          timestamp,
+          zecPrice: prices.zec.toFixed(2),
+          ethPrice: prices.eth.toFixed(2),
+          solPrice: prices.sol.toFixed(2),
+          arbPercent,
+        }
+        
+        setPriceScans(prev => [newScan, ...prev].slice(0, 10)) // Keep last 10 scans
+      } catch (error) {
+        console.error('Failed to fetch prices:', error)
+      }
+    }
 
-  const txLogs: TxLog[] = [
-    { id: "1", intent: "Arb ZEC/ETH", hash: "0x7f...3a2b", privacy: "Shielded", timestamp: "10:42" },
-  ]
+    // Fetch immediately on mount
+    fetchAndUpdatePrices()
+
+    // Then fetch every 15 seconds
+    const interval = setInterval(fetchAndUpdatePrices, 15000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  // Initialize NEAR wallet on mount
+  useEffect(() => {
+    const init = async () => {
+      await initNear()
+      // Check if wallet is already connected
+      if (isWalletConnected()) {
+        const accountId = await getAccountId()
+        setNearAccount(accountId)
+        setWalletConnected(true)
+      }
+    }
+    init().catch(console.error)
+  }, [])
+
+
 
   // Handlers
-  const handleConnectWallet = () => setWalletConnected(!walletConnected)
+  const handleConnectWallet = async () => {
+    try {
+      if (walletConnected && nearAccount) {
+        // Already connected, maybe show disconnect option
+        setWalletConnected(false)
+        setNearAccount(null)
+      } else {
+        // Show wallet connection modal
+        await connectWallet()
+        // After connection, update state
+        setTimeout(async () => {
+          if (isWalletConnected()) {
+            const accountId = await getAccountId()
+            setNearAccount(accountId)
+            setWalletConnected(true)
+          }
+        }, 1000)
+      }
+    } catch (error) {
+      console.error("Failed to connect wallet:", error)
+    }
+  }
   const handleSettingsChange = (newSettings: Settings) => setSettings(newSettings)
   const handleRefreshData = () => console.log("Refreshing data...")
-  const handleSubmitPrompt = (prompt: string) => {
+  const handleSubmitPrompt = async (prompt: string) => {
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       type: "user",
@@ -43,8 +108,8 @@ export default function Home() {
     setChatHistory([...chatHistory, newMessage])
     
     // Simulate agent response
-    setTimeout(() => {
-        const parsed = parseWithFakeLLM(prompt)
+    setTimeout(async () => {
+        const parsed = await parseWithFakeLLM(prompt)
         const isProfitable = parsed.prices.profit_pct && parseFloat(parsed.prices.profit_pct) > 0
 
         const agentResponse: ChatMessage = {
@@ -78,11 +143,32 @@ export default function Home() {
         setChatHistory(prev => [...prev, agentResponse])
     }, 1000)
   }
-  const handleExecuteSwap = () => console.log("Executing swap...")
+  const handleExecuteSwap = async () => {
+    try {
+      const intent = await createZecIntent("0.01")
+      
+      // Add transaction log
+      const newLog: TxLog = {
+        id: Date.now().toString(),
+        intent: "Arb ZEC/ETH",
+        hash: intent.hash,
+        privacy: "Shielded",
+        timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      }
+      
+      setTxLogs(prev => [newLog, ...prev])
+      
+      console.log(`Intent created! Hash: ${intent.hash}`)
+      console.log(`Privacy: shielded pool + NEAR Chain Signatures`)
+      console.log(`Explorer: https://testnet.nearblocks.io/txns/${intent.hash}`)
+    } catch (error) {
+      console.error("Failed to execute swap:", error)
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans text-foreground">
-      <Header walletConnected={walletConnected} onConnectWallet={handleConnectWallet} />
+      <Header walletConnected={walletConnected} nearAccount={nearAccount} onConnectWallet={handleConnectWallet} />
       <div className="flex flex-1 overflow-hidden">
         <ChatPanel 
           chatHistory={chatHistory} 
