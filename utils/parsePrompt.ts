@@ -5,12 +5,11 @@ export async function parseWithFakeLLM(prompt: string) {
     const threshold = lower.match(/(\d+\.?\d?)%/)?.[1] || "2";
     const toChain = lower.includes("eth") ? "Ethereum" : lower.includes("sol") ? "Solana" : "Ethereum";
 
-    // Get real price data from CoinGecko
     const prices = await getPrices();
     const baseZEC = prices.zec;
+    const targetPrice = toChain.toLowerCase() === "ethereum" ? prices.eth : prices.sol;
 
-    // Simulate bridged price with slight variation (±1.5%)
-    const bridgedZEC = baseZEC * (1 + (Math.random() > 0.5 ? 0.015 : -0.015));
+    const priceDiff = ((targetPrice - baseZEC) / baseZEC) * 100;
 
     return {
         raw: prompt,
@@ -19,12 +18,12 @@ export async function parseWithFakeLLM(prompt: string) {
             from: "zcash",
             to: toChain.toLowerCase(),
             threshold: parseFloat(threshold),
-            opportunity: bridgedZEC > baseZEC ? ((bridgedZEC / baseZEC - 1) * 100).toFixed(2) : null,
+            opportunity: priceDiff > 0 ? priceDiff.toFixed(2) : null,
         },
         prices: {
-            zcash_native: baseZEC.toFixed(2),
-            zcash_bridged: bridgedZEC.toFixed(2),
-            profit_pct: bridgedZEC > baseZEC ? ((bridgedZEC / baseZEC - 1) * 100).toFixed(2) : null,
+            zcash_price: baseZEC.toFixed(2),
+            target_price: targetPrice.toFixed(2),
+            profit_pct: priceDiff.toFixed(2),
         },
     };
 }

@@ -162,12 +162,12 @@ export default function Home() {
             arbitrageData: [
                 { 
                     chain: "Zcash", 
-                    price: parsed.prices.zcash_native, 
+                    price: parsed.prices.zcash_price, 
                     difference: "0%" 
                 },
                 { 
                     chain: parsed.intent.to.charAt(0).toUpperCase() + parsed.intent.to.slice(1), 
-                    price: parsed.prices.zcash_bridged, 
+                    price: parsed.prices.target_price, 
                     difference: (parseFloat(parsed.prices.profit_pct || "0") > 0 ? "+" : "") + (parsed.prices.profit_pct || "0") + "%"
                 }
             ]
