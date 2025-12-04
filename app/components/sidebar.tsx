@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,6 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Shield } from "lucide-react"
 import type { PriceScan, TxLog, Settings } from "@/lib/types"
 
 interface SidebarProps {
@@ -23,11 +25,17 @@ export function Sidebar({ priceScans, txLogs, settings, onSettingsChange, onRefr
     <aside className="flex w-full flex-col border-l border-border bg-sidebar p-4 lg:w-[30%]">
       {/* Real-Time Scans */}
       <div className="mb-4">
-        <h3 className="mb-2 text-sm font-semibold text-sidebar-foreground">Real-Time Scans</h3>
-        <div className="max-h-[200px] overflow-y-auto">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-sidebar-foreground flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            Real-Time Scans
+          </h3>
+          <Badge className="bg-primary/20 text-primary border-primary/30 text-xs">Live</Badge>
+        </div>
+        <div className="max-h-[200px] overflow-y-auto rounded-lg border border-sidebar-border bg-sidebar-accent/30">
           <Table>
             <TableHeader>
-              <TableRow className="border-sidebar-border">
+              <TableRow className="border-sidebar-border hover:bg-transparent">
                 <TableHead className="text-xs text-muted-foreground">Time</TableHead>
                 <TableHead className="text-xs text-muted-foreground">ZEC</TableHead>
                 <TableHead className="text-xs text-muted-foreground">ETH</TableHead>
@@ -37,17 +45,17 @@ export function Sidebar({ priceScans, txLogs, settings, onSettingsChange, onRefr
             </TableHeader>
             <TableBody>
               {priceScans.map((scan, idx) => (
-                <TableRow key={idx} className="border-sidebar-border">
-                  <TableCell className="py-1 text-xs text-sidebar-foreground">{scan.timestamp}</TableCell>
-                  <TableCell className="py-1 text-xs text-sidebar-foreground">${scan.zecPrice}</TableCell>
-                  <TableCell className="py-1 text-xs text-sidebar-foreground">${scan.ethPrice}</TableCell>
-                  <TableCell className="py-1 text-xs text-sidebar-foreground">${scan.solPrice}</TableCell>
+                <TableRow key={idx} className="border-sidebar-border hover:bg-sidebar-accent/50 transition-colors">
+                  <TableCell className="py-1.5 text-xs text-sidebar-foreground font-mono">{scan.timestamp}</TableCell>
+                  <TableCell className="py-1.5 text-xs text-primary font-semibold">${scan.zecPrice}</TableCell>
+                  <TableCell className="py-1.5 text-xs text-sidebar-foreground">${scan.ethPrice}</TableCell>
+                  <TableCell className="py-1.5 text-xs text-sidebar-foreground">${scan.solPrice}</TableCell>
                   <TableCell
-                    className={`py-1 text-xs ${
-                      Number.parseFloat(scan.arbPercent) > 0 ? "text-primary" : "text-sidebar-foreground"
+                    className={`py-1.5 text-xs font-semibold ${
+                      Number.parseFloat(scan.arbPercent) > 0 ? "text-primary" : "text-muted-foreground"
                     }`}
                   >
-                    {scan.arbPercent}%
+                    {Number.parseFloat(scan.arbPercent) > 0 ? '+' : ''}{scan.arbPercent}%
                   </TableCell>
                 </TableRow>
               ))}
@@ -60,21 +68,30 @@ export function Sidebar({ priceScans, txLogs, settings, onSettingsChange, onRefr
 
       {/* Tx Simulation Log */}
       <div className="mb-4">
-        <h3 className="mb-2 text-sm font-semibold text-sidebar-foreground">Tx Simulation Log</h3>
+        <h3 className="mb-2 text-sm font-semibold text-sidebar-foreground flex items-center gap-2">
+          <Shield className="h-3.5 w-3.5 text-primary" />
+          Tx Simulation Log
+        </h3>
         <div className="max-h-[200px] space-y-2 overflow-y-auto">
           {txLogs.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No transactions yet</p>
+            <div className="rounded-lg border border-dashed border-sidebar-border bg-sidebar-accent/20 p-4 text-center">
+              <p className="text-xs text-muted-foreground">No transactions yet</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">Execute a swap to see logs</p>
+            </div>
           ) : (
             txLogs.map((log) => (
-              <Card key={log.id} className="border-sidebar-border bg-sidebar-accent p-2">
-                <p className="text-xs text-sidebar-foreground">
-                  <span className="font-medium">Intent:</span> {log.intent}
+              <Card key={log.id} className="border-sidebar-border bg-sidebar-accent/40 p-3 hover:bg-sidebar-accent/60 transition-all hover:border-primary/30">
+                <div className="flex items-start justify-between mb-1.5">
+                  <p className="text-xs text-sidebar-foreground font-medium">
+                    {log.intent}
+                  </p>
+                  <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5 py-0">{log.privacy}</Badge>
+                </div>
+                <p className="font-mono text-xs text-muted-foreground mb-1">
+                  {log.hash}
                 </p>
-                <p className="font-mono text-xs text-muted-foreground">
-                  <span className="font-medium font-sans">Hash:</span> {log.hash}
-                </p>
-                <p className="text-xs text-primary">
-                  <span className="font-medium text-sidebar-foreground">Privacy:</span> {log.privacy}
+                <p className="text-[10px] text-muted-foreground">
+                  {log.timestamp}
                 </p>
               </Card>
             ))

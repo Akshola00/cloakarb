@@ -9,6 +9,7 @@ import type { ChatMessage, PriceScan, TxLog, Settings } from "@/lib/types"
 import { parseWithFakeLLM } from "@/utils/parsePrompt"
 import { getPrices } from "@/lib/prices"
 import { initNear, createZecIntent, connectWallet, isWalletConnected, getAccountId } from "@/lib/near"
+import { validateMessage } from "@/utils/validateMessage"
 
 export default function Home() {
   // State
@@ -107,7 +108,38 @@ export default function Home() {
     }
     setChatHistory([...chatHistory, newMessage])
     
-    // Simulate agent response
+    // Validate message
+    const validation = validateMessage(prompt)
+    
+    // Handle greeting
+    if (validation.isGreeting) {
+      setTimeout(() => {
+        const greetingResponse: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          type: "agent",
+          content: "How can I help you today? You can ask me to set up arbitrage alerts like 'Alert me if ZEC arbitrages >2% vs ETH on Solana, spend privately'",
+          timestamp: new Date(),
+        }
+        setChatHistory(prev => [...prev, greetingResponse])
+      }, 500)
+      return
+    }
+    
+    // Handle invalid message
+    if (!validation.isValid) {
+      setTimeout(() => {
+        const errorResponse: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          type: "agent",
+          content: validation.errorMessage || "I couldn't process your request. Please try again.",
+          timestamp: new Date(),
+        }
+        setChatHistory(prev => [...prev, errorResponse])
+      }, 500)
+      return
+    }
+    
+    // Valid message - process normally
     setTimeout(async () => {
         const parsed = await parseWithFakeLLM(prompt)
         const isProfitable = parsed.prices.profit_pct && parseFloat(parsed.prices.profit_pct) > 0
